@@ -15,7 +15,6 @@ public class Avisador {
 			System.out.println(amount);
 			hourlyBank.logout(); 
 
-			
 			System.out.println("HOLA");
 			
 		}
