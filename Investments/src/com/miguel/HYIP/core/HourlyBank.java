@@ -8,8 +8,19 @@ public class HourlyBank implements HYIP {
 	
 	public boolean isAlive() {
 		//mechanize  Buscar esta libreria
-		HttpsURLConnection hCon = new 
-				
-				
+		//HttpsURLConnection hCon = new
+		return true;
+	}
+	
+	public boolean login() {
+		return true;
+	}
+
+	public boolean logout() {
+		return true;
+	}
+	
+	public double getAmount() {
+		return 0.0;
 	}
 }
