@@ -14,8 +14,6 @@ public class Avisador {
 			//if (amount > hourlyBank.getMinDeposit())
 			System.out.println(amount);
 			hourlyBank.logout(); 
-
-			System.out.println("HOLA");
 			
 		}
 
