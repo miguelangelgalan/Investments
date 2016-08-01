@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="libs/mechanize-2.0.0-RC1.jar"/>
 	<classpathentry kind="lib" path="libs/httpclient-4.5.2.jar"/>
@@ -13,5 +14,7 @@
 	<classpathentry kind="lib" path="libs/httpmime-4.5.2.jar"/>
 	<classpathentry kind="lib" path="libs/jna-4.1.0.jar"/>
 	<classpathentry kind="lib" path="libs/jna-platform-4.1.0.jar"/>
+	<classpathentry kind="lib" path="libs/jsoup-1.9.2.jar"/>
+	<classpathentry kind="lib" path="libs/css-selectors-1.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

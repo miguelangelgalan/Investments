@@ -9,11 +9,13 @@ public class Avisador {
 		double amount = 0;
 		
 		if (hourlyBank.isAlive()) {
-			hourlyBank.login();
-			amount = hourlyBank.getAmount();
-			//if (amount > hourlyBank.getMinDeposit())
-			System.out.println(amount);
-			hourlyBank.logout(); 
+			if (hourlyBank.login("miki3","atitelovoyadecir")) {
+				amount = hourlyBank.getAmount();
+				//if (amount > hourlyBank.getMinDeposit())
+				System.out.println(amount);
+				hourlyBank.logout(); 
+				
+			}
 			
 		}
 
