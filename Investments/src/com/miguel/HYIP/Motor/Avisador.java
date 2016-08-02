@@ -8,7 +8,7 @@ public class Avisador {
 	public static void main(String[] args) {
 				
 		//processAllHourlyBank();
-		processThisHourlyBank("neonat", "atitelovoyadecir");
+		processThisHourlyBank("", "");
 	}
 	
 	private static void processAllHourlyBank() {
