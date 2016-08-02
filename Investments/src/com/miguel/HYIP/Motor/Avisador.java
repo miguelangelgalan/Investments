@@ -1,6 +1,7 @@
 package com.miguel.HYIP.Motor;
 
 import com.miguel.HYIP.core.HourlyBank;
+import com.miguel.HYIP.helper.Configuracion;
 
 public class Avisador {
 
@@ -9,16 +10,17 @@ public class Avisador {
 		double amount = 0;
 		
 		if (hourlyBank.isAlive()) {
-			if (hourlyBank.login("miki3","atitelovoyadecir")) {
-				amount = hourlyBank.getAmount();
-				//if (amount > hourlyBank.getMinDeposit())
-				System.out.println(amount);
-				hourlyBank.logout(); 
-				
+			String user, pwd;
+			int total = Integer.parseInt(Configuracion.getProperty("hourly_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("hourly" + i + "_user");
+				pwd = Configuracion.getProperty("hourly" + i + "_pwd");
+				if (hourlyBank.login(user,pwd)) {
+					amount = hourlyBank.getAmount();
+					System.out.println(user + ": " + amount);
+					hourlyBank.logout(); 				
+				}
 			}
-			
 		}
-
 	}
-
 }

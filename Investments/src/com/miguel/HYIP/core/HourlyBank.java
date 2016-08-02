@@ -27,6 +27,9 @@ import com.gistlabs.mechanize.Resource;
 import com.gistlabs.mechanize.cookie.Cookie;
 import com.gistlabs.mechanize.cookie.Cookies;
 import com.gistlabs.mechanize.document.html.HtmlDocument;
+import com.gistlabs.mechanize.document.html.HtmlElement;
+import com.gistlabs.mechanize.document.html.HtmlElements;
+import com.gistlabs.mechanize.document.html.HtmlNode;
 import com.gistlabs.mechanize.document.html.form.Form;
 import com.gistlabs.mechanize.document.html.form.FormElement;
 import com.gistlabs.mechanize.document.html.form.Forms;
@@ -34,6 +37,7 @@ import com.gistlabs.mechanize.document.link.Link;
 import com.gistlabs.mechanize.document.link.Links;
 import com.gistlabs.mechanize.impl.MechanizeAgent;
 import com.gistlabs.mechanize.interfaces.document.Document;
+import com.gistlabs.mechanize.interfaces.document.Node;
 import com.miguel.HYIP.helper.HTTPCLIENT;
 
 
@@ -41,6 +45,8 @@ public class HourlyBank implements HYIPInterface {
 
 	private static final String NAME="Hourlybank";
 	private String baseUrl = "https://hourlybank.biz";
+	private String accountUrl = "/index.php?a=account";
+	private String logoutUrl = "/index.php?a=logout";
 	private MechanizeAgent agent = null;
 	private Logger log = Logger.getLogger("HOURLYBANK");
 	private HtmlDocument lastResponse; 
@@ -101,7 +107,7 @@ public class HourlyBank implements HYIPInterface {
 
 	public boolean login(String user, String pass) {
 		try {
-			
+			log.info(this.NAME + " LOGIN " + user);
 			if (isLogged()) {  // Si ya estamos logados, no seguimos
 				return true;
 			}
@@ -137,21 +143,34 @@ public class HourlyBank implements HYIPInterface {
 	}
 
 	public boolean logout() {
-		return true;
+		if (isLogged()) {
+			HtmlDocument pg = getAgent().get(baseUrl + logoutUrl);
+			if (check_OK(pg)) {
+				this.getAgent().cookies().removeAll();
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public double getAmount() {
+		String sAmount="0.0";
 		if (isLogged()) {
-			HtmlDocument pg = getLastResponse();
-			Links ls = pg.links();
-			for (Link l : ls) {
-				String hr = l.href();
-				String ts = l.toString();
-			}
-			Link l = pg.link("Account");
-			
-			Form loginForm = pg.form("loginform");
-			if (loginForm != null) {
+			//HtmlDocument pg = getLastResponse();
+			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
+			if (check_OK(pg)) {
+				HtmlElement he = pg.find("Account Balance");
+				HtmlElements hes = pg.htmlElements();
+				HtmlElement table = hes.find("table tbody");
+				List<HtmlElement> tables = hes.findAll("table tbody tr");
+				for (HtmlElement e : tables) {
+					List<HtmlNode> tds = e.getChildren();
+					if (tds.get(1).getValue().contains("Account Balance:")) {
+						sAmount = tds.get(3).find("b").getValue();
+						log.info("sAmount: " + sAmount);
+					}
+				}
+			} else {
 				return 0.0;
 			}
 			
@@ -159,7 +178,21 @@ public class HourlyBank implements HYIPInterface {
 			log.severe(this.NAME + " CANNOT GET AMOUNT. NOT LOGGED");
 			return 0.0;	
 		}
-		return 0.0;	
+		return Double.parseDouble(sAmount);	
 		
+	}
+	
+	private boolean check_OK(HtmlDocument pagina) {
+		if (pagina.getResponse().getStatusLine().getStatusCode() == 200) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean withdraw(double amount) {
+		
+		
+		return true;
 	}
 }
