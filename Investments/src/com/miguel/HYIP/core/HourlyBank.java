@@ -33,6 +33,7 @@ import com.gistlabs.mechanize.document.html.HtmlNode;
 import com.gistlabs.mechanize.document.html.form.Form;
 import com.gistlabs.mechanize.document.html.form.FormElement;
 import com.gistlabs.mechanize.document.html.form.Forms;
+import com.gistlabs.mechanize.document.html.form.RadioButton;
 import com.gistlabs.mechanize.document.link.Link;
 import com.gistlabs.mechanize.document.link.Links;
 import com.gistlabs.mechanize.impl.MechanizeAgent;
@@ -47,6 +48,8 @@ public class HourlyBank implements HYIPInterface {
 	private String baseUrl = "https://hourlybank.biz";
 	private String accountUrl = "/index.php?a=account";
 	private String logoutUrl = "/index.php?a=logout";
+	private String withdrawUrl = "/index.php?a=withdraw";
+	private String depositUrl = "/index.php?a=deposit";
 	private MechanizeAgent agent = null;
 	private Logger log = Logger.getLogger("HOURLYBANK");
 	private HtmlDocument lastResponse; 
@@ -159,11 +162,11 @@ public class HourlyBank implements HYIPInterface {
 			//HtmlDocument pg = getLastResponse();
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
-				HtmlElement he = pg.find("Account Balance");
+				//HtmlElement he = pg.find("Account Balance");
 				HtmlElements hes = pg.htmlElements();
-				HtmlElement table = hes.find("table tbody");
-				List<HtmlElement> tables = hes.findAll("table tbody tr");
-				for (HtmlElement e : tables) {
+				//HtmlElement table = hes.find("table tbody");
+				List<HtmlElement> trs = hes.findAll("table tbody tr");
+				for (HtmlElement e : trs) {
 					List<HtmlNode> tds = e.getChildren();
 					if (tds.get(1).getValue().contains("Account Balance:")) {
 						sAmount = tds.get(3).find("b").getValue();
@@ -191,8 +194,118 @@ public class HourlyBank implements HYIPInterface {
 	}
 	
 	public boolean withdraw(double amount) {
-		
-		
-		return true;
+		String sAmount="0.0";
+		if (isLogged()) {
+			HtmlDocument pg = getAgent().get(baseUrl + withdrawUrl);
+			if (check_OK(pg)) {
+				Form withdrawForm = pg.form("withdraw");
+				if (withdrawForm != null) {
+//					FormElement username = loginForm.get("username");
+//					username.setValue(user);
+//					FormElement password = loginForm.get("password");
+//					password.setValue(pass);
+//
+//					Resource res = loginForm.submit();
+//					int a=0;
+//					int returnCode = 0;
+//					if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
+//						log.info(this.NAME + " LOGIN OK. RC=" + returnCode);
+//						setLastResponse((HtmlDocument)res);
+//						return true;
+//					} else {
+//						log.severe(this.NAME + " LOGIN NOT OK. RC=" + returnCode);
+//						return false;
+//					}				
+				} else {  // No se encuentra formulario de login
+					log.severe(this.NAME + " LOGIN FORM NOT FOUND");
+					return false;				
+				}
+				
+				
+				
+				
+				HtmlElement he = pg.find("Account Balance");
+				HtmlElements hes = pg.htmlElements();
+				HtmlElement table = hes.find("table tbody");
+				List<HtmlElement> tables = hes.findAll("table tbody tr");
+				for (HtmlElement e : tables) {
+					List<HtmlNode> tds = e.getChildren();
+					if (tds.get(1).getValue().contains("Account Balance:")) {
+						sAmount = tds.get(3).find("b").getValue();
+						log.info("sAmount: " + sAmount);
+					}
+				}
+			} else {
+				return false;
+			}
+			
+		} else {
+			log.severe(this.NAME + " CANNOT WITHDRAW FUNDS. NOT LOGGED");
+			return false;	
+		}
+		return true;	
 	}
+
+	public boolean makeInternalDeposit(double amount) {
+		String sAmount="0.0";
+		if (isLogged()) {
+			HtmlDocument pg = getAgent().get(baseUrl + depositUrl);
+			if (check_OK(pg)) {
+				Form depositForm = pg.form("spendform");
+				if (depositForm != null) {
+					FormElement fAmount = depositForm.get("amount");
+					String actualAmount = fAmount.getValue();
+					fAmount.setValue(Double.toString(amount));
+					actualAmount = fAmount.getValue();
+					
+					List<RadioButton> types = depositForm.getRadioButtons("type");
+					for (RadioButton rb : types) {
+						if (rb.getValue().equalsIgnoreCase("account_43")) {   // Checkeamos el correspondiente a "Spend funds from the Account Balance Payeer" => "account_43"
+							rb.check();   																		// "Spend funds from PerfectMoney" => "process_18"
+						}																						// "Spend funds from Payeer" => "process_43"
+					}																							// "Spend funds from Bitcoin" => "process_48"
+					
+					
+//					RadioButton type = depositForm.getRadioButton("type");
+//					boolean b = type.isChecked();
+//					String actualType = type.getValue();
+//					type.check();
+//					b = type.isChecked();
+					
+					HtmlDocument res = depositForm.submit();
+
+					int returnCode = 0;
+					if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
+						Form confirmDepositForm = res.form("spend");
+						if (confirmDepositForm != null) {
+							// Chequeamos valores a enviar						
+							log.info(this.NAME + " Realizando depósito de: " + confirmDepositForm.get("amount").getValue() + " en: " + confirmDepositForm.get("type").getValue());					
+							res = confirmDepositForm.submit();
+							if (((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) ||
+									(returnCode = res.getResponse().getStatusLine().getStatusCode()) == 302){
+								log.info(this.NAME + " DEPOSITO REALIZADO CORRECTAMENTE.");
+								return true;
+							} else {
+								log.severe(this.NAME + " DEPOSITO NO REALIZADO CORRECTAMENTE." + returnCode);
+								return false;
+							}						
+						}
+					} else {
+						log.severe(this.NAME + " DEPOSITO NO REALIZADO CORRECTAMENTE." + returnCode);
+						return false;
+					}				
+				} else {  // No se encuentra formulario de depósito
+					log.severe(this.NAME + " DEPOSIT FORM NOT FOUND");
+					return false;				
+				}
+				
+				
+			}
+			
+		} else {
+			log.severe(this.NAME + " CANNOT WITHDRAW FUNDS. NOT LOGGED");
+			return false;	
+		}
+		return true;	
+	}	
 }
