@@ -35,6 +35,8 @@ import com.gistlabs.mechanize.document.html.form.Form;
 import com.gistlabs.mechanize.document.html.form.FormElement;
 import com.gistlabs.mechanize.document.html.form.Forms;
 import com.gistlabs.mechanize.document.html.form.RadioButton;
+import com.gistlabs.mechanize.document.html.form.SubmitButton;
+import com.gistlabs.mechanize.document.json.node.impl.AttributeNode;
 import com.gistlabs.mechanize.document.link.Link;
 import com.gistlabs.mechanize.document.link.Links;
 import com.gistlabs.mechanize.document.node.Node;
@@ -43,19 +45,20 @@ import com.gistlabs.mechanize.interfaces.document.Document;
 import com.miguel.HYIP.helper.HTTPCLIENT;
 
 
-public class HourlyBank implements HYIPInterface {
+public class Dayeer implements HYIPInterface {
 
-	private static final String NAME="Hourlybank";
-	private String baseUrl = "https://hourlybank.biz";
-	private String accountUrl = "/index.php?a=account";
-	private String logoutUrl = "/index.php?a=logout";
-	private String withdrawUrl = "/index.php?a=withdraw";
-	private String depositUrl = "/index.php?a=deposit";
+	private static final String NAME="Dayeer";
+	private String baseUrl = "https://dayeer.com";
+	private String loginUrl = "/?a=cust&page=login";
+	private String accountUrl = "/?a=account";
+	private String logoutUrl = "/?a=logout";
+	private String withdrawUrl = "/?a=withdraw";
+	private String depositUrl = "/?a=deposit";
 	private MechanizeAgent agent = null;
-	private Logger log = Logger.getLogger("HOURLYBANK");
+	private Logger log = Logger.getLogger("DAYEER");
 	private HtmlDocument lastResponse; 
 
-	public HourlyBank() {
+	public Dayeer() {
 		super();
 		agent = new MechanizeAgent(HTTPCLIENT.getClient());
 	}
@@ -116,8 +119,12 @@ public class HourlyBank implements HYIPInterface {
 				return true;
 			}
 			
-			HtmlDocument pg = this.getAgent().get(baseUrl);	
-			Form loginForm = pg.form("loginform");
+			HtmlDocument pg = this.getAgent().get(baseUrl + loginUrl);	
+			Link l = pg.link("a[class=logologin]");
+			HtmlElement he = pg.find("a[class=logologin]");
+			
+			
+			Form loginForm = pg.form("mainform");
 			if (loginForm != null) {
 				FormElement username = loginForm.get("username");
 				username.setValue(user);
@@ -160,18 +167,18 @@ public class HourlyBank implements HYIPInterface {
 	public double getAmount() {
 		String sAmount="0.0";
 		if (isLogged()) {
-			//HtmlDocument pg = getLastResponse();
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
-				//HtmlElement he = pg.find("Account Balance");
 				HtmlElements hes = pg.htmlElements();
-				//HtmlElement table = hes.find("table tbody");
-				List<HtmlElement> trs = hes.findAll("table tbody tr");
-				for (HtmlElement e : trs) {
-					List<HtmlNode> tds = e.getChildren();
-					if (tds.get(1).getValue().contains("Account Balance:")) {
-						sAmount = tds.get(3).find("b").getValue();
-						log.info("sAmount: " + sAmount);
+				List<HtmlElement> spans = hes.findAll("span[class]");
+				for (HtmlElement e : spans) {
+					String attr = e.getAttribute("class");
+					if (attr.equalsIgnoreCase("accbtxt")) {
+						String padre = e.getParent().getValue();
+						if (padre.startsWith("Total Account Balance:")) {
+							sAmount = e.getInnerHtml().replace('$', ' ');
+							System.out.println(sAmount);							
+						}
 					}
 				}
 			} else {
@@ -182,8 +189,7 @@ public class HourlyBank implements HYIPInterface {
 			log.severe(this.NAME + " CANNOT GET AMOUNT. NOT LOGGED");
 			return 0.0;	
 		}
-		return Double.parseDouble(sAmount);	
-		
+		return Double.parseDouble(sAmount);			
 	}
 	
 	private boolean check_OK(HtmlDocument pagina) {
@@ -210,18 +216,45 @@ public class HourlyBank implements HYIPInterface {
 						if (f.get("a") != null) {
 							if (f.get("a").getValue().equalsIgnoreCase("withdraw")) {
 							  withdrawForm = f;
+							  String atr = f.getAttribute("method");							  
+							  FormElement fe = f.get("amount");
+							  String uri = f.getUri();
+							  						
+							  String amo = f.get("amount").getValue();
+							  //f.get("amount").setValue("1.00");
+							  fe.set("00");
+							  //f.get("amount").setValue("[amount=\"0.60\"]");
+							  
+							  //fe = f.find("input[value=\"0.60\"]");
+							  
+//							  
+//							  String at = fe.getAttribute("value");
+//							  fe = f.get("amount");
+//							  fe.getAttribute("value").concat("f");
+//							  at = fe.getAttribute("value");
+//							  f.get("amount").setValue("\"0.60\"");
+//							  fe = f.findTextArea("amount");
+//							  
+							  SubmitButton button = f.findSubmitButton("[type=submit]");
+							 
+							  HtmlDocument res = f.submit(button);
+							  
 							  break;
 							}
 						}						
 					}
 					if (withdrawForm != null)  {  // Lo tenemos
+
+						
 						// Establecemos el amount
 						FormElement fAmount = withdrawForm.get("amount");
-						Node he = fAmount.getNode();
+						//Node he = fAmount.getNode();
 						//he.
 						String oldAmount = fAmount.getValue();
-						fAmount.set(Double.toString(amount));
-						fAmount.setValue(Double.toString(amount));
+						//fAmount.set(Double.toString(amount));
+						fAmount.setValue("0.60");
+						String id = withdrawForm.getAttribute("name");
+						//fAmount.
 						
 						String newAmount = withdrawForm.get("amount").getValue();
 						
@@ -229,7 +262,7 @@ public class HourlyBank implements HYIPInterface {
 						//withdrawForm.
 						HtmlDocument res = withdrawForm.submit();
 
-						int returnCode = 00;
+						int returnCode = 0;
 						if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
 							
 							forms = res.forms();
