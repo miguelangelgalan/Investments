@@ -431,7 +431,7 @@ public class Dayeer implements HYIPInterface {
 			}
 			
 		} else {
-			log.severe(this.NAME + " CANNOT GET AMOUNT. NOT LOGGED");
+			log.severe(this.NAME + " CANNOT GET ACTIVE DEPOSITS. NOT LOGGED");
 			return false;	
 		}		
 			

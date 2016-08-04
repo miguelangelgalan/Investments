@@ -9,9 +9,9 @@ public class Avisador {
 	public static void main(String[] args) {
 				
 		//processAllHourlyBank();
-		//processThisHourlyBank("miki", "atitelovoyadecir");
+		processThisHourlyBank("miki", "atitelovoyadecir");
 		
-		processAllDayeer();
+		//processAllDayeer();
 	}
 	
 	private static void processAllHourlyBank() {
@@ -39,9 +39,15 @@ public class Avisador {
 		double amount = 0;
 		if (hourlyBank.isAlive()) {
 			if (hourlyBank.login(user,pass)) {
-				amount = hourlyBank.getAmount();
-				System.out.println(user + ": " + amount);
-				hourlyBank.withdraw(1);
+				if (hourlyBank.existActiveDeposit()) {
+					System.out.println("SI existe depósito activo");
+				} else {
+					System.out.println("NO existe depósito activo");
+				}
+				//amount = hourlyBank.getAmount();
+				//System.out.println(user + ": " + amount);
+				//hourlyBank.withdraw(amount);
+				//hourlyBank.makeInternalDeposit(5);
 				//hourlyBank.makeInternalDeposit(amount);
 				hourlyBank.logout(); 				
 			}
