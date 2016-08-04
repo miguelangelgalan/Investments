@@ -61,6 +61,12 @@ public class Avisador {
 				user = Configuracion.getProperty("dayeer" + i + "_user");
 				pwd = Configuracion.getProperty("dayeer" + i + "_pwd");
 				if (dayeer.login(user,pwd)) {
+//					if (dayeer.isPossibleDeposit()) {
+//						System.out.println("SI es posible");
+//					} else {
+//						System.out.println("NO es posible");
+//					}
+						
 					accountAmount = dayeer.getAmount();
 					System.out.println(user + ": " + accountAmount);
 					// Sólo sacamos cantidades enteras, para evitar comisiones de más
@@ -69,7 +75,7 @@ public class Avisador {
 					if (withdrawAmount >= 1) {
 						dayeer.withdraw(withdrawAmount);	
 					}					
-					//dayeer.makeInternalDeposit(0.0);
+//					//dayeer.makeInternalDeposit(0.0);
 					dayeer.logout(); 				
 				}
 			}

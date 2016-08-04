@@ -388,4 +388,52 @@ public class Dayeer implements HYIPInterface {
 		}
 		return true;	
 	}	
+
+
+	
+	// La idea va a ser ver la cantidad en Active Deposit, y si coincide con "Last Investment" es que sólo hay 1 depósito => podemos invertir
+	// Si ActiveDeposit es > que "Last Investment", es que hay 2 depósitos => NO SE PUEDE INVERTIR	
+	public boolean isPossibleDeposit() {
+		double activeDepositAmount = 0.2;
+		double lastInvestmentAmount = 0.1;
+		if (isLogged()) {
+			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
+			if (check_OK(pg)) {
+				HtmlElements hes = pg.htmlElements();
+				List<HtmlElement> tds = hes.findAll("td[class]");
+				for (HtmlElement e : tds) {
+					String attr = e.getAttribute("class");
+					if (attr.equalsIgnoreCase("accbg2")) {
+						String padre = e.getParent().getValue();
+						if (padre.startsWith("Active Deposit:")) {
+							List<HtmlNode> c = e.getParent().getChildren();
+							if (c.get(1).getValue().equalsIgnoreCase("Active Deposit:")) {
+								activeDepositAmount = Double.parseDouble(c.get(3).getValue().replace('$', ' ').replaceAll("\u00a0"," ").trim());
+								System.out.println("ActiveDeposit: " + activeDepositAmount);
+							}							
+						} else if (padre.startsWith("Last Investment:")) {
+							List<HtmlNode> c = e.getParent().getChildren();
+							if (c.get(1).getValue().equalsIgnoreCase("Last Investment:")) {
+								lastInvestmentAmount = Double.parseDouble(c.get(3).getValue().replace('$', ' ').replaceAll("\u00a0"," ").trim());
+								System.out.println("LastInvestment: " + lastInvestmentAmount);
+							}
+						}
+					}
+				}
+				
+				if (lastInvestmentAmount == activeDepositAmount) {
+					return true;
+				} else {
+					return false;
+				}
+			} else {
+				return false;
+			}
+			
+		} else {
+			log.severe(this.NAME + " CANNOT GET AMOUNT. NOT LOGGED");
+			return false;	
+		}		
+			
+	}
 }
