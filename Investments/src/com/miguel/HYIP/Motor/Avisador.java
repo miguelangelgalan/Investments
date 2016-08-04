@@ -52,7 +52,8 @@ public class Avisador {
 	
 	private static void processAllDayeer() {
 		Dayeer dayeer = new Dayeer();
-		double amount = 0;
+		double accountAmount = 0.0;
+		double withdrawAmount = 0.0;
 		if (dayeer.isAlive()) {
 			String user, pwd;
 			int total = Integer.parseInt(Configuracion.getProperty("dayeer_total"));
@@ -60,9 +61,14 @@ public class Avisador {
 				user = Configuracion.getProperty("dayeer" + i + "_user");
 				pwd = Configuracion.getProperty("dayeer" + i + "_pwd");
 				if (dayeer.login(user,pwd)) {
-					amount = dayeer.getAmount();
-					System.out.println(user + ": " + amount);
-					dayeer.withdraw(1.0);
+					accountAmount = dayeer.getAmount();
+					System.out.println(user + ": " + accountAmount);
+					// Sólo sacamos cantidades enteras, para evitar comisiones de más
+					withdrawAmount = new Double(accountAmount).intValue();
+					// Sólo si es >1 nos interesa
+					if (withdrawAmount >= 1) {
+						dayeer.withdraw(withdrawAmount);	
+					}					
 					//dayeer.makeInternalDeposit(0.0);
 					dayeer.logout(); 				
 				}

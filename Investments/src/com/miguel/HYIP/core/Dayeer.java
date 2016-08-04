@@ -42,6 +42,7 @@ import com.gistlabs.mechanize.document.link.Links;
 import com.gistlabs.mechanize.document.node.Node;
 import com.gistlabs.mechanize.impl.MechanizeAgent;
 import com.gistlabs.mechanize.interfaces.document.Document;
+import com.gistlabs.mechanize.parameters.Parameters;
 import com.miguel.HYIP.helper.HTTPCLIENT;
 
 
@@ -209,36 +210,13 @@ public class Dayeer implements HYIPInterface {
 				Form withdrawForm = null;
 				Forms forms = pg.forms();
 				//Form wf = pg.form("form input[value=withdraw]");
-				Form wf = pg.form("form");
+				//Form wf = pg.form("form");
 				if (forms.size() != 0) {
 					System.out.println(forms.size());
 					for (Form f : forms) { //Nos quedamos con el de withdraw, que es el que no tiene nombre, y campo oculto a=withdraw
 						if (f.get("a") != null) {
 							if (f.get("a").getValue().equalsIgnoreCase("withdraw")) {
 							  withdrawForm = f;
-							  String atr = f.getAttribute("method");							  
-							  FormElement fe = f.get("amount");
-							  String uri = f.getUri();
-							  						
-							  String amo = f.get("amount").getValue();
-							  //f.get("amount").setValue("1.00");
-							  fe.set("00");
-							  //f.get("amount").setValue("[amount=\"0.60\"]");
-							  
-							  //fe = f.find("input[value=\"0.60\"]");
-							  
-//							  
-//							  String at = fe.getAttribute("value");
-//							  fe = f.get("amount");
-//							  fe.getAttribute("value").concat("f");
-//							  at = fe.getAttribute("value");
-//							  f.get("amount").setValue("\"0.60\"");
-//							  fe = f.findTextArea("amount");
-//							  
-							  SubmitButton button = f.findSubmitButton("[type=submit]");
-							 
-							  HtmlDocument res = f.submit(button);
-							  
 							  break;
 							}
 						}						
@@ -248,38 +226,53 @@ public class Dayeer implements HYIPInterface {
 						
 						// Establecemos el amount
 						FormElement fAmount = withdrawForm.get("amount");
-						//Node he = fAmount.getNode();
-						//he.
 						String oldAmount = fAmount.getValue();
-						//fAmount.set(Double.toString(amount));
-						fAmount.setValue("0.60");
-						String id = withdrawForm.getAttribute("name");
-						//fAmount.
-						
+						fAmount.set(Double.toString(amount));		
 						String newAmount = withdrawForm.get("amount").getValue();
 						
+						// NO FUNCIONA. VER ALTERNATIVA.
+						//HtmlDocument res = withdrawForm.submit();
+
+						// ALTERNATIVA:
 						
-						//withdrawForm.
-						HtmlDocument res = withdrawForm.submit();
+						String uri = baseUrl + withdrawUrl;
+						Parameters params = new Parameters();
+						params.add("a","withdraw");
+						params.add("action","preview");
+						params.add("ec","43");
+						params.add("amount", Double.toString(amount));
+						params.add("comment", "");
+						params.add("submit", "Request");
+						HtmlDocument res = getAgent().post(uri, params);
+
 
 						int returnCode = 0;
 						if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
-							
+							Form confirmWithdrawForm = null;
 							forms = res.forms();
+							if (forms.size() != 0) {								
+								for (Form f : forms) { //Nos quedamos con el de confirmación de withdraw, que es el que no tiene nombre, y campo oculto a=withdraw
+									if (f.get("a") != null) {
+										if (f.get("a").getValue().equalsIgnoreCase("withdraw")) {
+										  confirmWithdrawForm = f;
+										  break;
+										}
+									}						
+								}
+								if (confirmWithdrawForm != null)  {  // Lo tenemos
+									log.info(this.NAME + " Realizando withdraw de: " + confirmWithdrawForm.get("amount").getValue() + " en: " + confirmWithdrawForm.get("ec").getValue());
+									res = confirmWithdrawForm.submit();
+									if (((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) ||
+											(returnCode = res.getResponse().getStatusLine().getStatusCode()) == 302){
+										log.info(this.NAME + " WITHDRAW REALIZADO CORRECTAMENTE. Uri: " + res.getUri());
+										return true;
+									} else {
+										log.severe(this.NAME + " WITHDRAW NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
+										return false;
+									}						
+									
+								}
 							
-							Form confirmDepositForm = res.form("spend");
-							if (confirmDepositForm != null) {
-								// Chequeamos valores a enviar						
-								log.info(this.NAME + " Realizando depósito de: " + confirmDepositForm.get("amount").getValue() + " en: " + confirmDepositForm.get("type").getValue());					
-								res = confirmDepositForm.submit();
-								if (((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) ||
-										(returnCode = res.getResponse().getStatusLine().getStatusCode()) == 302){
-									log.info(this.NAME + " DEPOSITO REALIZADO CORRECTAMENTE.");
-									return true;
-								} else {
-									log.severe(this.NAME + " DEPOSITO NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
-									return false;
-								}						
 							}
 						} else {
 							log.severe(this.NAME + " WITHDRAW NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
