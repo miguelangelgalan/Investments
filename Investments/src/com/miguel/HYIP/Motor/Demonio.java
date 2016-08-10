@@ -14,12 +14,14 @@ public class Demonio {
 				printHour();
 				HYIPManager manager = new HYIPManager();
 				manager.doDayeer();
+				manager.doHourlyBank();
 			}
 		};
 		
 		
 		Timer timer = new Timer();
-		timer.scheduleAtFixedRate(timerTask, 0, 3600000);  // Cada Hora
+		//timer.scheduleAtFixedRate(timerTask, 0, 3600000);  // Cada Hora
+		timer.scheduleAtFixedRate(timerTask, 0, 1200000);  // Cada 20 mins
 
 	}
 

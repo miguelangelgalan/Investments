@@ -46,7 +46,7 @@ import com.gistlabs.mechanize.parameters.Parameters;
 import com.miguel.HYIP.helper.HTTPCLIENT;
 
 
-public class Dayeer implements HYIPInterface {
+public class PokerAdv implements HYIPInterface {
 
 	private static final String NAME="Dayeer";
 	private String baseUrl = "https://dayeer.com";
@@ -59,7 +59,7 @@ public class Dayeer implements HYIPInterface {
 	private Logger log = Logger.getLogger("DAYEER");
 	private HtmlDocument lastResponse; 
 
-	public Dayeer() {
+	public PokerAdv() {
 		super();
 		agent = new MechanizeAgent(HTTPCLIENT.getClient());
 	}
@@ -414,12 +414,8 @@ public class Dayeer implements HYIPInterface {
 						} else if (padre.startsWith("Last Investment:")) {
 							List<HtmlNode> c = e.getParent().getChildren();
 							if (c.get(1).getValue().equalsIgnoreCase("Last Investment:")) {
-								if (c.get(3).getValue().indexOf("n/a") != -1) {
-									lastInvestmentAmount = 0.0;
-								} else {
-									lastInvestmentAmount = Double.parseDouble(c.get(3).getValue().replace('$', ' ').replaceAll("\u00a0"," ").trim());
-								}
-								System.out.println("LastInvestment: " + lastInvestmentAmount);							
+								lastInvestmentAmount = Double.parseDouble(c.get(3).getValue().replace('$', ' ').replaceAll("\u00a0"," ").trim());
+								System.out.println("LastInvestment: " + lastInvestmentAmount);
 							}
 						}
 					}
