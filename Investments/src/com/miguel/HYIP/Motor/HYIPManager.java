@@ -11,24 +11,35 @@ public class HYIPManager {
 	public void doDayeer() {
 		Dayeer dayeer = new Dayeer();
 		if (dayeer.isAlive()) {
-			String user, pwd;
+			String user, pwd, modo;
 			int total = Integer.parseInt(Configuracion.getProperty("dayeer_total"));
 			for (int i=1; i <= total; i++) {
 				user = Configuracion.getProperty("dayeer" + i + "_user");
 				pwd = Configuracion.getProperty("dayeer" + i + "_pwd");
+				modo = Configuracion.getProperty("dayeer" + i + "_modo");
 				if (dayeer.login(user,pwd)) {
 
 					// 1.- Comprobamos SALDO
 					double accountAmount = dayeer.getAmount();
 					System.out.println("DAYEER " + user + ": Amount: " + accountAmount);
 
-					// 2.- Sacamos SALDO
-					// Sólo sacamos cantidades enteras, para evitar comisiones de más
-					double withdrawAmount = new Double(accountAmount).intValue();
-					// Sólo si es >1 nos interesa
-					if (withdrawAmount >= 1) {
-						dayeer.withdraw(withdrawAmount);	
-					}					
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						if (dayeer.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos y sacamos ganancias
+							if (dayeer.makeInternalDeposit(6)) {
+								accountAmount = dayeer.getAmount();
+								dayeer.withdraw(accountAmount);								
+							} 
+						}
+					} else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más
+						double withdrawAmount = new Double(accountAmount).intValue();
+						// Sólo si es >1 nos interesa
+						if (withdrawAmount >= 1) {
+							dayeer.withdraw(withdrawAmount);	
+						}											
+					}
 
 					// 3.- Si es posible hacer otro depósito, AVISAR
 

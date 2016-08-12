@@ -440,4 +440,36 @@ public class Dayeer implements HYIPInterface {
 		}		
 			
 	}
+	
+	public double getActiveDeposit() {
+		double activeDepositAmount = 0.0;
+		if (isLogged()) {
+			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
+			if (check_OK(pg)) {
+				HtmlElements hes = pg.htmlElements();
+				List<HtmlElement> tds = hes.findAll("td[class]");
+				for (HtmlElement e : tds) {
+					String attr = e.getAttribute("class");
+					if (attr.equalsIgnoreCase("accbg2")) {
+						String padre = e.getParent().getValue();
+						if (padre.startsWith("Active Deposit:")) {
+							List<HtmlNode> c = e.getParent().getChildren();
+							if (c.get(1).getValue().equalsIgnoreCase("Active Deposit:")) {
+								activeDepositAmount = Double.parseDouble(c.get(3).getValue().replace('$', ' ').replaceAll("\u00a0"," ").trim());
+								System.out.println("ActiveDeposit: " + activeDepositAmount);
+							}							
+						} 
+					}
+				}
+				
+			} else {
+				return 0.0;
+			}
+			
+		} else {
+			log.severe(this.NAME + " CANNOT GET ACTIVE DEPOSITS. NOT LOGGED");
+			return 0.0;	
+		}
+		return activeDepositAmount;	
+	}	
 }
