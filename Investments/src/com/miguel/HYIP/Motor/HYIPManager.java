@@ -2,6 +2,7 @@ package com.miguel.HYIP.Motor;
 
 import com.gistlabs.mechanize.document.html.form.Email;
 import com.miguel.HYIP.core.Dayeer;
+import com.miguel.HYIP.core.Feers;
 import com.miguel.HYIP.core.HourlyBank;
 import com.miguel.HYIP.helper.Configuracion;
 
@@ -85,4 +86,44 @@ public class HYIPManager {
 			}
 		}
 	}
+	
+	public void doFeers() {
+		Feers feers = new Feers();
+		if (feers.isAlive()) {
+			String user, pwd, modo;
+			int total = Integer.parseInt(Configuracion.getProperty("feers_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("feers" + i + "_user");
+				pwd = Configuracion.getProperty("feers" + i + "_pwd");
+				modo = Configuracion.getProperty("feers" + i + "_modo");
+				if (feers.login(user,pwd)) {
+feers.makeInternalDeposit(7);
+					// 1.- Comprobamos SALDO
+					double accountAmount = feers.getAmount();
+					System.out.println("FEERS " + user + ": Amount: " + accountAmount);
+
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						if (feers.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos y sacamos ganancias. 7 - 0,50
+							if (feers.makeInternalDeposit(7)) {
+								accountAmount = feers.getAmount();
+								feers.withdraw(accountAmount);								
+							} 
+						}
+					} else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más
+						double withdrawAmount = new Double(accountAmount).intValue();
+						// Sólo si es >1 nos interesa
+						if (withdrawAmount >= 1) {
+							feers.withdraw(withdrawAmount);	
+						}											
+					}
+
+					feers.logout(); 				
+				}
+			}
+		}
+	}
+	
 }

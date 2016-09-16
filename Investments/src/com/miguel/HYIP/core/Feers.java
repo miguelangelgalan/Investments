@@ -125,7 +125,7 @@ public class Feers implements HYIPInterface {
 			HtmlElement he = pg.find("a[class=logologin]");
 			
 			
-			Form loginForm = pg.form("mainform");
+			Form loginForm = pg.form("loginform");
 			if (loginForm != null) {
 				FormElement username = loginForm.get("username");
 				username.setValue(user);
@@ -167,18 +167,20 @@ public class Feers implements HYIPInterface {
 	
 	public double getAmount() {
 		String sAmount="0.0";
+		int a=0;
 		if (isLogged()) {
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
 				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> spans = hes.findAll("span[class]");
+				List<HtmlElement> spans = hes.findAll("div[class]");
 				for (HtmlElement e : spans) {
 					String attr = e.getAttribute("class");
-					if (attr.equalsIgnoreCase("accbtxt")) {
-						String padre = e.getParent().getValue();
-						if (padre.startsWith("Total Account Balance:")) {
-							sAmount = e.getInnerHtml().replace('$', ' ');
-							System.out.println(sAmount);							
+					if (attr.equalsIgnoreCase("accountctn_Mid_Part")) {
+						List<HtmlNode> lis = (List<HtmlNode>) e.findAll("li");
+						for (HtmlNode n : lis) {
+							if (n.getValue().startsWith("Account Balance:")) {
+								sAmount = n.getChildren().get(1).getValue().replace('$', ' ').trim();
+							}
 						}
 					}
 				}
@@ -447,21 +449,18 @@ public class Feers implements HYIPInterface {
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
 				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> tds = hes.findAll("td[class]");
-				for (HtmlElement e : tds) {
+				List<HtmlElement> spans = hes.findAll("div[class]");
+				for (HtmlElement e : spans) {
 					String attr = e.getAttribute("class");
-					if (attr.equalsIgnoreCase("accbg2")) {
-						String padre = e.getParent().getValue();
-						if (padre.startsWith("Active Deposit:")) {
-							List<HtmlNode> c = e.getParent().getChildren();
-							if (c.get(1).getValue().equalsIgnoreCase("Active Deposit:")) {
-								activeDepositAmount = Double.parseDouble(c.get(3).getValue().replace('$', ' ').replaceAll("\u00a0"," ").trim());
-								System.out.println("ActiveDeposit: " + activeDepositAmount);
-							}							
-						} 
+					if (attr.equalsIgnoreCase("accountctn_Mid_Part")) {
+						List<HtmlNode> lis = (List<HtmlNode>) e.findAll("li");
+						for (HtmlNode n : lis) {
+							if (n.getValue().startsWith("Active Deposit:")) {
+								activeDepositAmount = Double.parseDouble(n.getChildren().get(1).getValue().replace('$', ' ').trim());
+							}
+						}
 					}
-				}
-				
+				}												
 			} else {
 				return 0.0;
 			}
