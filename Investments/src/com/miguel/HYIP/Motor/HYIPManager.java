@@ -97,7 +97,9 @@ public class HYIPManager {
 				pwd = Configuracion.getProperty("feers" + i + "_pwd");
 				modo = Configuracion.getProperty("feers" + i + "_modo");
 				if (feers.login(user,pwd)) {
-feers.makeInternalDeposit(7);
+
+// FALTA feers.makeInternalDeposit(7);
+					
 					// 1.- Comprobamos SALDO
 					double accountAmount = feers.getAmount();
 					System.out.println("FEERS " + user + ": Amount: " + accountAmount);

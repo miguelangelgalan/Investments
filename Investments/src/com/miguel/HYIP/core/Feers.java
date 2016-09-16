@@ -443,6 +443,7 @@ public class Feers implements HYIPInterface {
 			
 	}
 	
+	
 	public double getActiveDeposit() {
 		double activeDepositAmount = 0.0;
 		if (isLogged()) {
