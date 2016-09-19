@@ -14,7 +14,8 @@ public class Demonio {
 				printHour();
 				HYIPManager manager = new HYIPManager();
 				manager.doDayeer();
-				manager.doHourlyBank();
+				//manager.doHourlyBank();
+				manager.doFeers();
 			}
 		};
 		

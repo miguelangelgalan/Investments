@@ -340,6 +340,16 @@ public class Feers implements HYIPInterface {
 					fAmount.setValue(Double.toString(amount));
 					actualAmount = fAmount.getValue();
 					
+					// Escogemos el depósito.
+					List<RadioButton> deposits = depositForm.getRadioButtons("h_id");
+					for (RadioButton rb : deposits) {
+						if (rb.getValue().equalsIgnoreCase("1")) {   // Checkeamos el correspondiente a "6% hourly 33hours" => "1"
+							rb.check();   																		// "200% 1 day" => "2"
+						}																						
+					}																							
+
+					
+					// Escogemos de dónde vamos a coger el dinero. En este caso, de lo que tenemos acumulado en la cuenta.
 					List<RadioButton> types = depositForm.getRadioButtons("type");
 					for (RadioButton rb : types) {
 						if (rb.getValue().equalsIgnoreCase("account_43")) {   // Checkeamos el correspondiente a "Spend funds from the Account Balance Payeer" => "account_43"
