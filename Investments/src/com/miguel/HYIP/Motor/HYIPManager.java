@@ -4,6 +4,7 @@ import com.gistlabs.mechanize.document.html.form.Email;
 import com.miguel.HYIP.core.Dayeer;
 import com.miguel.HYIP.core.Feers;
 import com.miguel.HYIP.core.HourlyBank;
+import com.miguel.HYIP.core.HourlyCool;
 import com.miguel.HYIP.helper.Configuracion;
 
 public class HYIPManager {
@@ -126,4 +127,53 @@ public class HYIPManager {
 		}
 	}
 	
+	public void doHourlyCool() {
+		HourlyCool hourlyCool = new HourlyCool();
+		if (hourlyCool.isAlive()) {
+			String user, pwd, modo;
+			int total = Integer.parseInt(Configuracion.getProperty("hourlycool_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("hourlycool" + i + "_user");
+				pwd = Configuracion.getProperty("hourlycool" + i + "_pwd");
+				modo = Configuracion.getProperty("hourlycool" + i + "_modo");
+				if (hourlyCool.login(user,pwd)) {
+
+					// 1.- Comprobamos SALDO
+					double accountAmount = hourlyCool.getAmount();
+					System.out.println("HOURLYCOOL " + user + ": Amount: " + accountAmount);
+
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						if (hourlyCool.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos y sacamos ganancias
+							if (hourlyCool.makeInternalDeposit(6)) {
+								accountAmount = hourlyCool.getAmount();
+								hourlyCool.withdraw(accountAmount);								
+							} 
+						}
+					} else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más
+						double withdrawAmount = new Double(accountAmount).intValue();
+						// Sólo si es >1 nos interesa
+						if (withdrawAmount >= 1) {
+							hourlyCool.withdraw(withdrawAmount);	
+						}											
+					}
+
+					// 3.- Si es posible hacer otro depósito, AVISAR
+
+					if (hourlyCool.isPossibleDeposit()) {
+						System.out.println("SI es posible");
+						// AVISAR
+						//Email - SMS
+					} else {
+						System.out.println("NO es posible");
+					}
+						
+
+					hourlyCool.logout(); 				
+				}
+			}
+		}
+	}
 }

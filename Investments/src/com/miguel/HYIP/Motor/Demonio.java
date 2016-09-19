@@ -16,6 +16,7 @@ public class Demonio {
 				manager.doDayeer();
 				//manager.doHourlyBank();
 				manager.doFeers();
+				manager.doHourlyCool();
 			}
 		};
 		
