@@ -1,6 +1,7 @@
 package com.miguel.HYIP.Motor;
 
 import com.gistlabs.mechanize.document.html.form.Email;
+import com.miguel.HYIP.core.BitIncome;
 import com.miguel.HYIP.core.Dayeer;
 import com.miguel.HYIP.core.Feers;
 import com.miguel.HYIP.core.HourlyBank;
@@ -176,4 +177,55 @@ public class HYIPManager {
 			}
 		}
 	}
+	
+	public void doBitIncome() {
+		BitIncome bitIncome = new BitIncome();
+		if (bitIncome.isAlive()) {
+			String user, pwd, modo;
+			int total = Integer.parseInt(Configuracion.getProperty("bitincome_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("bitincome" + i + "_user");
+				pwd = Configuracion.getProperty("bitincome" + i + "_pwd");
+				modo = Configuracion.getProperty("bitincome" + i + "_modo");
+				if (bitIncome.login(user,pwd)) {
+				
+					// 1.- Comprobamos SALDO
+					double accountAmount = bitIncome.getAmount();
+					System.out.println("BITINCOME " + user + ": Amount: " + accountAmount);
+
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						if (bitIncome.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos y sacamos ganancias
+							if (bitIncome.makeInternalDeposit(6)) {
+								accountAmount = bitIncome.getAmount();
+								bitIncome.withdraw(accountAmount);								
+							} 
+						}
+					} else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más
+						double withdrawAmount = new Double(accountAmount).intValue();
+						// Sólo si es >1 nos interesa
+						if (withdrawAmount >= 1) {
+							bitIncome.withdraw(withdrawAmount);	
+						}											
+					}
+
+					// 3.- Si es posible hacer otro depósito, AVISAR
+
+					if (bitIncome.isPossibleDeposit()) {
+						System.out.println("SI es posible");
+						// AVISAR
+						//Email - SMS
+					} else {
+						System.out.println("NO es posible");
+					}
+						
+//					//dayeer.makeInternalDeposit(0.0);
+					bitIncome.logout(); 				
+				}
+			}
+		}
+	}
+	
 }

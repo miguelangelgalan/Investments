@@ -14,16 +14,18 @@ public class Demonio {
 				printHour();
 				HYIPManager manager = new HYIPManager();
 				manager.doDayeer();
-				//manager.doHourlyBank();
+				//// SCAM ----- manager.doHourlyBank(); ---- SCAM
 				manager.doFeers();
 				manager.doHourlyCool();
+				manager.doBitIncome();
 			}
 		};
 		
 		
 		Timer timer = new Timer();
 		//timer.scheduleAtFixedRate(timerTask, 0, 3600000);  // Cada Hora
-		timer.scheduleAtFixedRate(timerTask, 0, 1200000);  // Cada 20 mins
+		//timer.scheduleAtFixedRate(timerTask, 0, 1200000);  // Cada 20 mins
+		timer.scheduleAtFixedRate(timerTask, 0, 2100000);  // Cada 35 mins
 
 	}
 
