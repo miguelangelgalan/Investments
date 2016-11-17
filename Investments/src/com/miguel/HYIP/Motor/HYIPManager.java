@@ -6,6 +6,8 @@ import com.miguel.HYIP.core.Dayeer;
 import com.miguel.HYIP.core.Feers;
 import com.miguel.HYIP.core.HourlyBank;
 import com.miguel.HYIP.core.HourlyCool;
+import com.miguel.HYIP.core.HourlyOil;
+import com.miguel.HYIP.core.ROIHour;
 import com.miguel.HYIP.helper.Configuracion;
 
 public class HYIPManager {
@@ -128,6 +130,81 @@ public class HYIPManager {
 		}
 	}
 	
+	public void doHourlyOil() {
+		HourlyOil hourlyOil = new HourlyOil();
+		if (hourlyOil.isAlive()) {
+			String user, pwd, modo;
+			int total = Integer.parseInt(Configuracion.getProperty("hourlyoil_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("hourlyoil" + i + "_user");
+				pwd = Configuracion.getProperty("hourlyoil" + i + "_pwd");
+				modo = Configuracion.getProperty("hourlyoil" + i + "_modo");
+				if (hourlyOil.login(user,pwd)) {					
+					// 1.- Comprobamos SALDO
+					double accountAmount = hourlyOil.getAmount();
+					System.out.println("HOURLYOIL " + user + ": Amount: " + accountAmount);
+
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						if (hourlyOil.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos y sacamos ganancias. 7 - 0,50
+							if (hourlyOil.makeInternalDeposit(7)) {
+								accountAmount = hourlyOil.getAmount();
+								hourlyOil.withdraw(accountAmount);								
+							} 
+						}
+					} else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más
+						double withdrawAmount = new Double(accountAmount).intValue();
+						// Sólo si es >1 nos interesa
+						if (withdrawAmount >= 1) {
+							hourlyOil.withdraw(withdrawAmount);	
+						}											
+					}
+
+					hourlyOil.logout(); 				
+				}
+			}
+		}
+	}	
+	public void doROIHour() {
+		ROIHour roiHour = new ROIHour();
+		if (roiHour.isAlive()) {
+			String user, pwd, modo;
+			int total = Integer.parseInt(Configuracion.getProperty("roihour_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("roihour" + i + "_user");
+				pwd = Configuracion.getProperty("roihour" + i + "_pwd");
+				modo = Configuracion.getProperty("roihour" + i + "_modo");
+				if (roiHour.login(user,pwd)) {		
+roiHour.makeInternalDeposit(5);					
+					// 1.- Comprobamos SALDO
+					double accountAmount = roiHour.getAmount();
+					System.out.println("ROIHOUR " + user + ": Amount: " + accountAmount);
+
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						if (roiHour.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos y sacamos ganancias. 7 - 0,50
+							if (roiHour.makeInternalDeposit(5)) {
+								accountAmount = roiHour.getAmount();
+								roiHour.withdraw(accountAmount);								
+							} 
+						}
+					} else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más
+						double withdrawAmount = new Double(accountAmount).intValue();
+						// Sólo si es >1 nos interesa
+						if (withdrawAmount >= 1) {
+							roiHour.withdraw(withdrawAmount);	
+						}											
+					}
+
+					roiHour.logout(); 				
+				}
+			}
+		}
+	}		
 	public void doHourlyCool() {
 		HourlyCool hourlyCool = new HourlyCool();
 		if (hourlyCool.isAlive()) {
