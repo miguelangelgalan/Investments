@@ -37,6 +37,12 @@ public class HYIPManager {
 								dayeer.withdraw(accountAmount);								
 							} 
 						}
+					} else if (modo.equalsIgnoreCase("mantenimiento2")) {
+						if (dayeer.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+							// Reinvertimos todo
+							accountAmount = dayeer.getAmount();
+							dayeer.makeInternalDeposit(accountAmount);
+						}
 					} else { // Modo normal. Sacamos dinero.
 						// Sólo sacamos cantidades enteras, para evitar comisiones de más
 						double withdrawAmount = new Double(accountAmount).intValue();
@@ -177,7 +183,7 @@ public class HYIPManager {
 				pwd = Configuracion.getProperty("roihour" + i + "_pwd");
 				modo = Configuracion.getProperty("roihour" + i + "_modo");
 				if (roiHour.login(user,pwd)) {		
-roiHour.makeInternalDeposit(5);					
+roiHour.makeInternalDeposit(2);					
 					// 1.- Comprobamos SALDO
 					double accountAmount = roiHour.getAmount();
 					System.out.println("ROIHOUR " + user + ": Amount: " + accountAmount);
@@ -185,20 +191,36 @@ roiHour.makeInternalDeposit(5);
 					// 2.- Sacamos SALDO según modo
 					if (modo.equalsIgnoreCase("mantenimiento")) {
 						if (roiHour.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
-							// Reinvertimos y sacamos ganancias. 7 - 0,50
+							// Reinvertimos y sacamos ganancias. 5 - 0,46
 							if (roiHour.makeInternalDeposit(5)) {
 								accountAmount = roiHour.getAmount();
 								roiHour.withdraw(accountAmount);								
 							} 
 						}
-					} else { // Modo normal. Sacamos dinero.
-						// Sólo sacamos cantidades enteras, para evitar comisiones de más
-						double withdrawAmount = new Double(accountAmount).intValue();
-						// Sólo si es >1 nos interesa
-						if (withdrawAmount >= 1) {
-							roiHour.withdraw(withdrawAmount);	
-						}											
 					}
+					else if (modo.equalsIgnoreCase("mantenimiento_compuesto")) {
+							if (roiHour.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+								// Reinvertimos y sacamos ganancias. Sacamos 5% de las ganancias, y reinvertimos el resto
+								//Calculos:
+								accountAmount = roiHour.getAmount();
+								Double withdrawAmount = accountAmount * 0.05;
+								Double reinversionAmount = accountAmount - withdrawAmount;
+								if (roiHour.makeInternalDeposit(reinversionAmount)) {									
+									roiHour.withdraw(withdrawAmount);								
+								} 
+							}
+						}					
+					else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más, excepto si ya han vencido los depósitos, que sacamos lo que quede...
+						if (roiHour.getActiveDeposit() == 0.0) { // Sacamos todo
+							roiHour.withdraw(accountAmount);
+						} else {
+							double withdrawAmount = new Double(accountAmount).intValue();
+							// Sólo si es >1 nos interesa
+							if (withdrawAmount >= 1) {
+								roiHour.withdraw(withdrawAmount);	
+							}
+						}					}
 
 					roiHour.logout(); 				
 				}
@@ -230,12 +252,18 @@ roiHour.makeInternalDeposit(5);
 							} 
 						}
 					} else { // Modo normal. Sacamos dinero.
-						// Sólo sacamos cantidades enteras, para evitar comisiones de más
-						double withdrawAmount = new Double(accountAmount).intValue();
-						// Sólo si es >1 nos interesa
-						if (withdrawAmount >= 1) {
-							hourlyCool.withdraw(withdrawAmount);	
-						}											
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más, excepto si ya han vencido los depósitos, que sacamos lo que quede...
+						if (hourlyCool.getActiveDeposit() == 0.0) { // Sacamos todo
+							if (accountAmount > 0.0) {
+									hourlyCool.withdraw(accountAmount);
+							}
+						} else {
+							double withdrawAmount = new Double(accountAmount).intValue();
+							// Sólo si es >1 nos interesa
+							if (withdrawAmount >= 1) {
+								hourlyCool.withdraw(withdrawAmount);	
+							}
+						}
 					}
 
 					// 3.- Si es posible hacer otro depósito, AVISAR

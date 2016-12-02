@@ -347,11 +347,12 @@ public class ROIHour implements HYIPInterface {
 			if (check_OK(pg)) {
 				Form depositForm = pg.form("spendform");
 				if (depositForm != null) {
-					depositForm.
-					FormElement fAmount = depositForm.get("amount");
-					String actualAmount = fAmount.getValue();
-					fAmount.setValue(Double.toString(amount));
-					actualAmount = fAmount.getValue();
+
+//					No coge todos los campos del formulario...
+//					FormElement fAmount = depositForm.get("amount");
+//					String actualAmount = fAmount.getValue();
+//					fAmount.setValue(Double.toString(amount));
+//					actualAmount = fAmount.getValue();
 					
 					// Escogemos el depósito.
 					List<RadioButton> deposits = depositForm.getRadioButtons("h_id");
@@ -371,13 +372,18 @@ public class ROIHour implements HYIPInterface {
 					}																							// "Spend funds from Bitcoin" => "process_48"
 					
 					
-//					RadioButton type = depositForm.getRadioButton("type");
-//					boolean b = type.isChecked();
-//					String actualType = type.getValue();
-//					type.check();
-//					b = type.isChecked();
+					// ALTERNATIVA: Porque no coge todos los campos del formulario
 					
-					HtmlDocument res = depositForm.submit();
+					String uri = baseUrl + withdrawUrl;
+					Parameters params = new Parameters();
+					params.add("a","deposit");
+					params.add("h_id","1");
+					params.add("type","account_43");
+					params.add("amount", Double.toString(amount));
+					params.add("submit", "Spend");
+					HtmlDocument res = getAgent().post(uri, params);
+					
+					//HtmlDocument res = depositForm.submit();
 
 					int returnCode = 0;
 					if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				

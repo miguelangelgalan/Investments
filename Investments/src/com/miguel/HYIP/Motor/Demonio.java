@@ -16,7 +16,7 @@ public class Demonio {
 				//// SCAM ----- manager.doHourlyBank(); ---- SCAM
 				//// SCAM ----- manager.doBitIncome(); ---- SCAM
 				//// SCAM ----- manager.doHourlyOil();
-				//manager.doROIHour();
+//				manager.doROIHour();
 				manager.doDayeer();
 				manager.doFeers();
 				manager.doHourlyCool();
