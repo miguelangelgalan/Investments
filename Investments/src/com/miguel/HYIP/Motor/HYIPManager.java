@@ -154,7 +154,7 @@ public class HYIPManager {
 					if (modo.equalsIgnoreCase("mantenimiento")) {
 						if (hourlyOil.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
 							// Reinvertimos y sacamos ganancias. 7 - 0,50
-							if (hourlyOil.makeInternalDeposit(7)) {
+							if (hourlyOil.makeInternalDeposit(2)) {
 								accountAmount = hourlyOil.getAmount();
 								hourlyOil.withdraw(accountAmount);								
 							} 
@@ -182,23 +182,24 @@ public class HYIPManager {
 				user = Configuracion.getProperty("roihour" + i + "_user");
 				pwd = Configuracion.getProperty("roihour" + i + "_pwd");
 				modo = Configuracion.getProperty("roihour" + i + "_modo");
-				if (roiHour.login(user,pwd)) {		
-roiHour.makeInternalDeposit(2);					
+				if (roiHour.login(user,pwd)) {							
 					// 1.- Comprobamos SALDO
 					double accountAmount = roiHour.getAmount();
 					System.out.println("ROIHOUR " + user + ": Amount: " + accountAmount);
 
 					// 2.- Sacamos SALDO según modo
 					if (modo.equalsIgnoreCase("mantenimiento")) {
-						if (roiHour.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
-							// Reinvertimos y sacamos ganancias. 5 - 0,46
+						// Nuevo método, por no ser fiable el tema de si hay un depósito activo.
+						accountAmount = roiHour.getAmount();
+						if (accountAmount >= 5.0) {  
+							// Reinvertimos y sacamos el resto. // OJO , fallará cuando hay dos depósitos de 5...
 							if (roiHour.makeInternalDeposit(5)) {
 								accountAmount = roiHour.getAmount();
 								roiHour.withdraw(accountAmount);								
 							} 
 						}
 					}
-					else if (modo.equalsIgnoreCase("mantenimiento_compuesto")) {
+					else if (modo.equalsIgnoreCase("mantenimiento_compuesto")) {   // OJO, NO HACERLO CON ESTA, DEPOSITOS ALTOS LOS INVIERTE a 1 AÑO.
 							if (roiHour.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
 								// Reinvertimos y sacamos ganancias. Sacamos 5% de las ganancias, y reinvertimos el resto
 								//Calculos:

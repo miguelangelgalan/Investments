@@ -15,10 +15,10 @@ public class Demonio {
 				HYIPManager manager = new HYIPManager();
 				//// SCAM ----- manager.doHourlyBank(); ---- SCAM
 				//// SCAM ----- manager.doBitIncome(); ---- SCAM
-				//// SCAM ----- manager.doHourlyOil();
-//				manager.doROIHour();
+				manager.doHourlyOil();
+				manager.doROIHour();
 				manager.doDayeer();
-				manager.doFeers();
+				//// SCAM ----- manager.doFeers();
 				manager.doHourlyCool();
 
 			}
