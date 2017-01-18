@@ -46,20 +46,20 @@ import com.gistlabs.mechanize.parameters.Parameters;
 import com.miguel.HYIP.helper.HTTPCLIENT;
 
 
-public class ROIHour implements HYIPInterface {
+public class PayHour implements HYIPInterface {
 
-	private static final String NAME="ROIHour";
-	private String baseUrl = "https://roihour.com";
+	private static final String NAME="PayHour";
+	private String baseUrl = "https://www.payhour.biz";
 	private String loginUrl = "/?a=cust&page=login";
-	private String accountUrl = "/?a=account";
-	private String logoutUrl = "/?a=logout";
-	private String withdrawUrl = "/?a=withdraw";
-	private String depositUrl = "/?a=deposit";
+	private String accountUrl = "/index.php?a=account";
+	private String logoutUrl = "/index.php?a=logout";
+	private String withdrawUrl = "/index.php?a=withdraw";
+	private String depositUrl = "/index.php?a=deposit";
 	private MechanizeAgent agent = null;
-	private Logger log = Logger.getLogger("ROIHOUR");
+	private Logger log = Logger.getLogger("PAYHOUR");
 	private HtmlDocument lastResponse; 
 
-	public ROIHour() {
+	public PayHour() {
 		super();
 		agent = new MechanizeAgent(HTTPCLIENT.getClient());
 	}
@@ -105,7 +105,7 @@ public class ROIHour implements HYIPInterface {
 		Cookies cs = this.getAgent().cookies();
 		List<Cookie> listaCookies = cs.getAll();
 		for (Cookie ck : listaCookies) {
-			if (ck.getName().equalsIgnoreCase("password")) {
+			if ((ck.getName().equalsIgnoreCase("password")) || (ck.getName().equalsIgnoreCase("PHPSESSID"))) {
 				return true;
 			}
 		}
@@ -122,23 +122,10 @@ public class ROIHour implements HYIPInterface {
 			
 			HtmlDocument pg = this.getAgent().get(baseUrl + loginUrl);	
 			Link l = pg.link("a[class=logologin]");
-			HtmlElement he = pg.find("div[class=login-block]");
-			
-			Form loginForm = null;
-			Forms forms = pg.forms();
-			if (forms.size() != 0) {				
-				for (Form f : forms) { //Nos quedamos con el de login, que es el que no tiene nombre, y campo oculto a=do_login
-					if (f.get("a") != null) {
-						if (f.get("a").getValue().equalsIgnoreCase("do_login")) {
-						  loginForm = f;
-						  break;
-						}
-					}						
-				}
-			}
+			HtmlElement he = pg.find("a[class=logologin]");
 			
 			
-//			Form loginForm = pg.form("loginform");
+			Form loginForm = pg.form("loginform");
 			if (loginForm != null) {
 				FormElement username = loginForm.get("username");
 				username.setValue(user);
@@ -180,22 +167,20 @@ public class ROIHour implements HYIPInterface {
 	
 	public double getAmount() {
 		String sAmount="0.0";
-		int a=1;
 		if (isLogged()) {
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
 				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> trs = hes.findAll("tr");
-				for (HtmlElement e : trs) {
-					List<HtmlNode> tds = (List<HtmlNode>) e.findAll("td");
-					for (HtmlNode n : tds) {
-						String str = n.getValue();
-						if (n.getValue().startsWith("Account Balance:")) {
-							HtmlNode htn = n.getParent().getChildren().get(3);
-							sAmount= n.getParent().getChildren().get(3).getChildren().get(1).getValue();								
-						}
+				List<HtmlElement> tds = hes.findAll("td");
+				for (HtmlElement e : tds) {
+					if (e.getValue().startsWith("Account Balance:")) {
+						sAmount = e.getParent().getParent().getChildren().get(2).getValue().replace("$", "");
+								
+								//.getValue().replace("$", "");
+						System.out.println(sAmount);							
 					}
-				}				
+					
+				}
 			} else {
 				return 0.0;
 			}
@@ -220,124 +205,91 @@ public class ROIHour implements HYIPInterface {
 		if (isLogged()) {
 			HtmlDocument pg = getAgent().get(baseUrl + withdrawUrl);
 			if (check_OK(pg)) {
-				//Form withdrawForm = pg.form("withdraw");   // Noexiste
-				Form withdrawForm = null;
-				Forms forms = pg.forms();
-				//Form wf = pg.form("form input[value=withdraw]");
-				//Form wf = pg.form("form");
-				if (forms.size() != 0) {
-					System.out.println(forms.size());
-					for (Form f : forms) { //Nos quedamos con el de withdraw, que es el que no tiene nombre, y campo oculto a=withdraw
-						if (f.get("a") != null) {
-							if (f.get("a").getValue().equalsIgnoreCase("withdraw")) {
-							  withdrawForm = f;
-							  break;
+				Form withdrawForm = pg.form("withdrawform");   // Noexiste
+				if (withdrawForm != null)  {  // Lo tenemos
+					// Establecemos el amount
+					FormElement fAmount = withdrawForm.get("amount");
+					String oldAmount = fAmount.getValue();
+					fAmount.set(Double.toString(amount));		
+					String newAmount = withdrawForm.get("amount").getValue();
+						
+					// ALTERNATIVA:
+						
+					String uri = baseUrl + withdrawUrl;
+					Parameters params = new Parameters();
+					params.add("a","withdraw");
+					params.add("action","apreview");
+					params.add("pay","pay");
+					params.add("pincode","1667");
+					params.add("amount", Double.toString(amount));
+					params.add("textarea", "");
+					params.add("ec", "43");
+					params.add("submit", "Request");
+					HtmlDocument res = getAgent().post(uri, params);
+//System.out.println(res.htmlElements().toString());
+					int returnCode = 0;
+					if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
+						Form confirmWithdrawForm = null;
+						Forms forms = res.forms();
+						if (forms.size() != 0) {								
+							for (Form f : forms) { //Nos quedamos con el de confirmación de withdraw, que es el que no tiene nombre, y campo oculto a=withdraw
+								if (f.get("a") != null) {
+									if (f.get("a").getValue().equalsIgnoreCase("withdraw")) {
+									  confirmWithdrawForm = f;
+									  break;
+									}
+								}						
 							}
-						}						
-					}
-					if (withdrawForm != null)  {  // Lo tenemos
-
-						
-						// Establecemos el amount
-						FormElement fAmount = withdrawForm.get("amount");
-						String oldAmount = fAmount.getValue();
-						fAmount.set(Double.toString(amount));		
-						String newAmount = withdrawForm.get("amount").getValue();
-						
-						// NO FUNCIONA. VER ALTERNATIVA.
-						//HtmlDocument res = withdrawForm.submit();
-
-						// ALTERNATIVA:
-						
-						String uri = baseUrl + withdrawUrl;
-						Parameters params = new Parameters();
-						params.add("a","withdraw");
-						params.add("action","preview");
-						params.add("ec","43");
-						params.add("amount", Double.toString(amount));
-						params.add("comment", "");
-						params.add("submit", "Request");
-						HtmlDocument res = getAgent().post(uri, params);
-
-
-						int returnCode = 0;
-						if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
-							Form confirmWithdrawForm = null;
-							forms = res.forms();
-							if (forms.size() != 0) {								
-								for (Form f : forms) { //Nos quedamos con el de confirmación de withdraw, que es el que no tiene nombre, y campo oculto a=withdraw
-									if (f.get("a") != null) {
-										if (f.get("a").getValue().equalsIgnoreCase("withdraw")) {
-										  confirmWithdrawForm = f;
-										  break;
-										}
-									}						
-								}
-								if (confirmWithdrawForm != null)  {  // Lo tenemos
-									log.info(this.NAME + " Realizando withdraw de: " + confirmWithdrawForm.get("amount").getValue() + " en: " + confirmWithdrawForm.get("ec").getValue());
-									res = confirmWithdrawForm.submit();
-									if (((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) ||
-											(returnCode = res.getResponse().getStatusLine().getStatusCode()) == 302){
-										log.info(this.NAME + " WITHDRAW REALIZADO CORRECTAMENTE. Uri: " + res.getUri());
-										return true;
-									} else {
-										log.severe(this.NAME + " WITHDRAW NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
-										return false;
-									}						
-									
-								}
-							
+							if (confirmWithdrawForm != null)  {  // Lo tenemos
+								
+								// ALTERNATIVA: No funciona lo normal?
+								String uriConfirm = baseUrl + withdrawUrl;
+								Parameters paramsConfirm = new Parameters();
+								paramsConfirm.add("a","withdraw");
+								paramsConfirm.add("action","preview");
+								paramsConfirm.add("amount", Double.toString(amount));
+								paramsConfirm.add("ec", "43");
+								paramsConfirm.add("comment", "");
+								paramsConfirm.add("Confirm", "Confirm");
+								res = getAgent().post(uriConfirm, paramsConfirm);
+								
+								log.info(this.NAME + " Realizando withdraw de: " + confirmWithdrawForm.get("amount").getValue() + " en: " + confirmWithdrawForm.get("ec").getValue());
+								//res = confirmWithdrawForm.submit();
+								if (((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) ||
+										(returnCode = res.getResponse().getStatusLine().getStatusCode()) == 302){
+									log.info(this.NAME + " WITHDRAW REALIZADO CORRECTAMENTE. Uri: " + res.getUri());
+									//System.out.println(res.htmlElements().toString());
+									return true;
+								} else {
+									log.severe(this.NAME + " WITHDRAW NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
+									return false;
+								}						
+								
 							}
-						} else {
-							log.severe(this.NAME + " WITHDRAW NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
-							return false;
-						}				
 						
-						
+						}
+					} else {
+						log.severe(this.NAME + " WITHDRAW NO REALIZADO CORRECTAMENTE." + returnCode + " Uri: " + res.getUri());
+						return false;
+					}				
 						
 						
 						//log.info(this.NAME + " Realizando withdraw de: " + confirmDepositForm.get("amount").getValue() + " en: " + confirmDepositForm.get("type").getValue());
-					} else { // No hemos encontrado el formulario de WITHDRAW
-						log.severe(this.NAME + " WITHDRAW NO REALIZADO. NO SE ENCUENTRA EL FORMULARIO");
-						return false;						
-					}
-						
-						
-						
-//					FormElement username = loginForm.get("username");
-//					username.setValue(user);
-//					FormElement password = loginForm.get("password");
-//					password.setValue(pass);
-//
-//					Resource res = loginForm.submit();
-//					int a=0;
-//					int returnCode = 0;
-//					if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
-//						log.info(this.NAME + " LOGIN OK. RC=" + returnCode);
-//						setLastResponse((HtmlDocument)res);
-//						return true;
-//					} else {
-//						log.severe(this.NAME + " LOGIN NOT OK. RC=" + returnCode);
-//						return false;
-//					}				
-				} else {  // No se encuentra formulario de login
-					log.severe(this.NAME + " WITHDRAW FORM NOT FOUND");
-					return false;				
+				} else { // No hemos encontrado el formulario de WITHDRAW
+					log.severe(this.NAME + " WITHDRAW NO REALIZADO. NO SE ENCUENTRA EL FORMULARIO");
+					return false;						
 				}
+
 				
-				
-				
-				
-			
-			} else {
-				return false;
-			}
-			
 		} else {
-			log.severe(this.NAME + " CANNOT WITHDRAW FUNDS. NOT LOGGED");
-			return false;	
+			return false;
 		}
-		return true;	
+			
+	} else {
+		log.severe(this.NAME + " CANNOT WITHDRAW FUNDS. NOT LOGGED");
+		return false;	
+	}
+	return true;	
 	}
 
 	public boolean makeInternalDeposit(double amount) {
@@ -347,23 +299,19 @@ public class ROIHour implements HYIPInterface {
 			if (check_OK(pg)) {
 				Form depositForm = pg.form("spendform");
 				if (depositForm != null) {
-
-//					No coge todos los campos del formulario...
-//					FormElement fAmount = depositForm.get("amount");
-//					String actualAmount = fAmount.getValue();
-//					fAmount.setValue(Double.toString(amount));
-//					actualAmount = fAmount.getValue();
+					FormElement fAmount = depositForm.get("amount");
+					String actualAmount = fAmount.getValue();
+					fAmount.setValue(Double.toString(amount));
+					actualAmount = fAmount.getValue();
 					
 					// Escogemos el depósito.
 					List<RadioButton> deposits = depositForm.getRadioButtons("h_id");
 					for (RadioButton rb : deposits) {
-						if (rb.getValue().equalsIgnoreCase("1")) {   // Checkeamos el correspondiente a "6% hourly 33hours" => "1"
-							rb.check();   																		// "200% 1 day" => "2"
+						if (rb.getValue().equalsIgnoreCase("1")) {   // Checkeamos el correspondiente a "4% hourly 33hours" => "1"
+							rb.check();   																		
 						}																						
-					}																							
-
+					}		
 					
-					// Escogemos de dónde vamos a coger el dinero. En este caso, de lo que tenemos acumulado en la cuenta.
 					List<RadioButton> types = depositForm.getRadioButtons("type");
 					for (RadioButton rb : types) {
 						if (rb.getValue().equalsIgnoreCase("account_43")) {   // Checkeamos el correspondiente a "Spend funds from the Account Balance Payeer" => "account_43"
@@ -372,18 +320,13 @@ public class ROIHour implements HYIPInterface {
 					}																							// "Spend funds from Bitcoin" => "process_48"
 					
 					
-					// ALTERNATIVA: Porque no coge todos los campos del formulario
+//					RadioButton type = depositForm.getRadioButton("type");
+//					boolean b = type.isChecked();
+//					String actualType = type.getValue();
+//					type.check();
+//					b = type.isChecked();
 					
-					String uri = baseUrl + withdrawUrl;
-					Parameters params = new Parameters();
-					params.add("a","deposit");
-					params.add("h_id","1");
-					params.add("type","account_43");
-					params.add("amount", Double.toString(amount));
-					params.add("submit", "Spend");
-					HtmlDocument res = getAgent().post(uri, params);
-					
-					//HtmlDocument res = depositForm.submit();
+					HtmlDocument res = depositForm.submit();
 
 					int returnCode = 0;
 					if ((returnCode = res.getResponse().getStatusLine().getStatusCode()) == 200) {				
@@ -417,7 +360,7 @@ public class ROIHour implements HYIPInterface {
 			log.severe(this.NAME + " CANNOT WITHDRAW FUNDS. NOT LOGGED");
 			return false;	
 		}
-		return false;	
+		return true;	
 	}	
 
 
@@ -472,24 +415,19 @@ public class ROIHour implements HYIPInterface {
 			
 	}
 	
-	
 	public double getActiveDeposit() {
-		double activeDepositAmount = 0.0;
+		String activeDepositAmount = "0.0";
 		if (isLogged()) {
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
 				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> trs = hes.findAll("tr");
-				for (HtmlElement e : trs) {
-					List<HtmlNode> tds = (List<HtmlNode>) e.findAll("td");
-					for (HtmlNode n : tds) {
-						String str = n.getValue();
-						if (n.getValue().startsWith("Active Deposit:")) {
-							HtmlNode htn = n.getParent().getChildren().get(3);
-							activeDepositAmount= Double.parseDouble(n.getParent().getChildren().get(3).getChildren().get(1).getValue());								
-						}
+				List<HtmlElement> tds = hes.findAll("td");
+				for (HtmlElement e : tds) {					
+					if (e.getValue().startsWith("Active Deposit")) {
+						activeDepositAmount = e.getParent().getChildren().get(3).getValue().replace("$", "");
+						System.out.println(activeDepositAmount);							
 					}
-				}				
+				}
 			} else {
 				return 0.0;
 			}
@@ -498,6 +436,7 @@ public class ROIHour implements HYIPInterface {
 			log.severe(this.NAME + " CANNOT GET ACTIVE DEPOSITS. NOT LOGGED");
 			return 0.0;	
 		}
-		return activeDepositAmount;	
+		return Double.parseDouble(activeDepositAmount);	
 	}	
 }
+
