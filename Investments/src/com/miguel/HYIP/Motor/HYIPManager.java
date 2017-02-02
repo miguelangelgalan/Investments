@@ -2,6 +2,7 @@ package com.miguel.HYIP.Motor;
 
 import com.gistlabs.mechanize.document.html.form.Email;
 import com.miguel.HYIP.core.BitIncome;
+import com.miguel.HYIP.core.Damas;
 import com.miguel.HYIP.core.Dayeer;
 import com.miguel.HYIP.core.Feers;
 import com.miguel.HYIP.core.HourlyBank;
@@ -361,6 +362,25 @@ public class HYIPManager {
 		}
 	}
 
+	public void doDamas() {
+		Damas damas = new Damas();
+		if (damas.isAlive()) {
+			String user="neonat", pwd="atitelovoyadecir", modo;
+			if (damas.login(user,pwd)) {
+				// 1.- Visitamos la página
+				damas.visitaURL();
+				if (damas.pillado()) {
+					System.out.println("********************************************************************************************************************");
+					System.out.println("***********************                                                                 ****************************");
+					System.out.println("***********************                        ¡¡¡PILLADO!!!!                           ****************************");
+					System.out.println("***********************                                                                 ****************************");
+					System.out.println("********************************************************************************************************************");
+				}
+				damas.logout(); 				
+			}
+		}
+	}
+	
 	public void doBitIncome() {
 		BitIncome bitIncome = new BitIncome();
 		if (bitIncome.isAlive()) {
