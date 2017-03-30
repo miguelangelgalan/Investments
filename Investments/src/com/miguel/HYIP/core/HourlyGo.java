@@ -2,9 +2,6 @@ package com.miguel.HYIP.core;
 
 import java.io.IOException;
 import java.net.ConnectException;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
@@ -49,23 +46,20 @@ import com.gistlabs.mechanize.parameters.Parameters;
 import com.miguel.HYIP.helper.HTTPCLIENT;
 
 
-public class ROIHour implements HYIPInterface {
+public class HourlyGo implements HYIPInterface {
 
-	private static final String NAME="ROIHour";
-	private String baseUrl = "https://roihour.com";
+	private static final String NAME="HourlyGo";
+	private String baseUrl = "https://hourlygo.biz";
 	private String loginUrl = "/?a=cust&page=login";
 	private String accountUrl = "/?a=account";
 	private String logoutUrl = "/?a=logout";
 	private String withdrawUrl = "/?a=withdraw";
 	private String depositUrl = "/?a=deposit";
-	private String depositListUrl = "/?a=deposit_list";
 	private MechanizeAgent agent = null;
-	private Logger log = Logger.getLogger("ROIHOUR");
+	private Logger log = Logger.getLogger("HOURLYGO");
 	private HtmlDocument lastResponse; 
-	
-	private static boolean panic = false;
 
-	public ROIHour() {
+	public HourlyGo() {
 		super();
 		agent = new MechanizeAgent(HTTPCLIENT.getClient());
 	}
@@ -130,21 +124,21 @@ public class ROIHour implements HYIPInterface {
 			Link l = pg.link("a[class=logologin]");
 			HtmlElement he = pg.find("div[class=login-block]");
 			
-			Form loginForm = null;
-			Forms forms = pg.forms();
-			if (forms.size() != 0) {				
-				for (Form f : forms) { //Nos quedamos con el de login, que es el que no tiene nombre, y campo oculto a=do_login
-					if (f.get("a") != null) {
-						if (f.get("a").getValue().equalsIgnoreCase("do_login")) {
-						  loginForm = f;
-						  break;
-						}
-					}						
-				}
-			}
+//			Form loginForm = null;
+//			Forms forms = pg.forms();
+//			if (forms.size() != 0) {				
+//				for (Form f : forms) { //Nos quedamos con el de login, que es el que no tiene nombre, y campo oculto a=do_login
+//					if (f.get("a") != null) {
+//						if (f.get("a").getValue().equalsIgnoreCase("do_login")) {
+//						  loginForm = f;
+//						  break;
+//						}
+//					}						
+//				}
+//			}
 			
 			
-//			Form loginForm = pg.form("loginform");
+			Form loginForm = pg.form("loginform");
 			if (loginForm != null) {
 				FormElement username = loginForm.get("username");
 				username.setValue(user);
@@ -186,21 +180,26 @@ public class ROIHour implements HYIPInterface {
 	
 	public double getAmount() {
 		String sAmount="0.0";
-		int a=1;
+		
 		if (isLogged()) {
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
 				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> trs = hes.findAll("tr");
+				List<HtmlElement> trs = hes.findAll("div[class]");
 				for (HtmlElement e : trs) {
-					List<HtmlNode> tds = (List<HtmlNode>) e.findAll("td");
-					for (HtmlNode n : tds) {
-						String str = n.getValue();
-						if (n.getValue().startsWith("Account Balance:")) {
-							HtmlNode htn = n.getParent().getChildren().get(3);
-							sAmount= n.getParent().getChildren().get(3).getChildren().get(1).getValue();								
-						}
+					String attr = e.getAttribute("class");
+					if (attr.equalsIgnoreCase("amount")) {
+						sAmount = e.getValue().replace('$', ' ');
 					}
+
+//					List<HtmlNode> tds = (List<HtmlNode>) e.findAll("td");
+//					for (HtmlNode n : tds) {
+//						String str = n.getValue();
+//						if (n.getValue().startsWith("Account Balance:")) {
+//							HtmlNode htn = n.getParent().getChildren().get(3);
+//							sAmount= n.getParent().getChildren().get(3).getChildren().get(1).getValue();								
+//						}
+//					}
 				}				
 			} else {
 				return 0.0;
@@ -211,59 +210,6 @@ public class ROIHour implements HYIPInterface {
 			return 0.0;	
 		}
 		return Double.parseDouble(sAmount);			
-	}
-
-	public boolean checkDepositOK() {
-		boolean estado = false;
-		Calendar calendario = Calendar.getInstance();
-		calendario.add(Calendar.HOUR_OF_DAY, -6);   // Tener en cuenta la hora del servidor.
-		Date d = calendario.getTime();
-		String month = new SimpleDateFormat("MMM").format(d);
-		String fecha = month + "-" + calendario.get(Calendar.DAY_OF_MONTH) + "-" + calendario.get(Calendar.YEAR);
-		
-		if (isLogged()) {
-			HtmlDocument pg = getAgent().get(baseUrl + depositListUrl);
-			if (check_OK(pg)) {
-				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> tables = hes.findAll("table");
-				for (HtmlElement e : tables) {
-					if ("line".equalsIgnoreCase(e.getAttribute("class"))) {
-						// ¿Es el del 5%?
-						//(Nos lo dice el primer table)
-//						List<HtmlElement> tablesInside = (List<HtmlElement>) e.findAll("table");
-//						String tableString = tablesInside.toString();
-//						if (tableString.indexOf("5% hourly") != -1) {
-//							if (tableString.indexOf("Expire in 1 days") != -1) {   // Acaba de hacerse el depósito
-//								// TODO OK
-//								if (tableString.toLowerCase().contains(fecha.toLowerCase())) {
-//									estado = true;									
-//								}
-//							}
-//						}
-						estado = true;
-						// VAMOS A HACERLO AL REVÉS. SI APARECE UN DEPÓSITO EN EL "NEW PACKAGE", PÁNICO
-						List<HtmlElement> tablesInside = (List<HtmlElement>) e.findAll("table");
-						String tableString = tablesInside.toString();
-						if (tableString.indexOf("New Package") != -1) {
-//							if (tableString.indexOf("Expire in 365 days") != -1) {   // Acaba de hacerse el depósito
-								if (tableString.toLowerCase().contains(fecha.toLowerCase())) {
-									estado = false;									
-								}
-//							}
-						}
-					
-					
-					}
-				}				
-			} else {
-				return estado;
-			}
-			
-		} else {
-			log.severe(this.NAME + " CANNOT GET DEPOSITS. NOT LOGGED");
-			return estado;	
-		}
-		return estado;			
 	}
 	
 	private boolean check_OK(HtmlDocument pagina) {
@@ -538,16 +484,13 @@ public class ROIHour implements HYIPInterface {
 			HtmlDocument pg = getAgent().get(baseUrl + accountUrl);
 			if (check_OK(pg)) {
 				HtmlElements hes = pg.htmlElements();
-				List<HtmlElement> trs = hes.findAll("tr");
-				for (HtmlElement e : trs) {
-					List<HtmlNode> tds = (List<HtmlNode>) e.findAll("td");
-					for (HtmlNode n : tds) {
-						String str = n.getValue();
-						if (n.getValue().startsWith("Active Deposit:")) {
-							HtmlNode htn = n.getParent().getChildren().get(3);
-							activeDepositAmount= Double.parseDouble(n.getParent().getChildren().get(3).getChildren().get(1).getValue());								
-						}
-					}
+				List<HtmlElement> spans = hes.findAll("span");
+				for (HtmlElement e : spans) {
+					String str = e.getValue();
+					if (e.getValue().startsWith("Active Deposit:")) {
+						HtmlNode htn = e.getParent().getChildren().get(1);
+						activeDepositAmount= Double.parseDouble(e.getParent().getChildren().get(1).getValue().replace("$", " "));								
+					}					
 				}				
 			} else {
 				return 0.0;
@@ -558,13 +501,5 @@ public class ROIHour implements HYIPInterface {
 			return 0.0;	
 		}
 		return activeDepositAmount;	
-	}
-
-	public static boolean isPanic() {
-		return panic;
-	}
-
-	public static void setPanic(boolean panic) {
-		ROIHour.panic = panic;
 	}	
 }

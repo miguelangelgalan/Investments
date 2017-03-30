@@ -7,6 +7,7 @@ import com.miguel.HYIP.core.Dayeer;
 import com.miguel.HYIP.core.Feers;
 import com.miguel.HYIP.core.HourlyBank;
 import com.miguel.HYIP.core.HourlyCool;
+import com.miguel.HYIP.core.HourlyGo;
 import com.miguel.HYIP.core.HourlyOil;
 import com.miguel.HYIP.core.PayHour;
 import com.miguel.HYIP.core.ROIHour;
@@ -156,10 +157,14 @@ public class HYIPManager {
 					if (modo.equalsIgnoreCase("mantenimiento")) {
 						if (hourlyOil.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
 							// Reinvertimos y sacamos ganancias. 7 - 0,50
-							if (hourlyOil.makeInternalDeposit(2.10)) {
-								accountAmount = hourlyOil.getAmount();
-								hourlyOil.withdraw(accountAmount);								
-							} 
+							if (accountAmount >= 2.10) {
+								if (hourlyOil.makeInternalDeposit(2.10)) {
+									accountAmount = hourlyOil.getAmount();
+									if (accountAmount > 0.10) {
+										hourlyOil.withdraw(accountAmount);	
+									}																	
+								} 								
+							}
 						}
 					} else { // Modo normal. Sacamos dinero.
 						// Sólo sacamos cantidades enteras, para evitar comisiones de más
@@ -184,11 +189,13 @@ public class HYIPManager {
 				user = Configuracion.getProperty("roihour" + i + "_user");
 				pwd = Configuracion.getProperty("roihour" + i + "_pwd");
 				modo = Configuracion.getProperty("roihour" + i + "_modo");
-				if (roiHour.login(user,pwd)) {							
+				if (roiHour.login(user,pwd)) {	
+					
+
 					// 1.- Comprobamos SALDO
 					double accountAmount = roiHour.getAmount();
 					System.out.println("ROIHOUR " + user + ": Amount: " + accountAmount);
-
+					
 					// 2.- Sacamos SALDO según modo
 					if (modo.equalsIgnoreCase("mantenimiento")) {
 						// Nuevo método, por no ser fiable el tema de si hay un depósito activo.
@@ -196,10 +203,25 @@ public class HYIPManager {
 						if (accountAmount > 2.0) {  
 							// Reinvertimos y sacamos el resto. // OJO , fallará cuando hay dos depósitos de 5...
 							// Si falla, no sacamos.
-							if (roiHour.makeInternalDeposit(2)) {
-								accountAmount = roiHour.getAmount();
-								roiHour.withdraw(accountAmount);								
-							} 
+							
+							// OJO, Si PANICO, no reinvertimos, lo sacamos.
+							if (ROIHour.isPanic()) {
+								System.out.println("----------------------------------------------------> PANIC!!!!!!!!! --------------------------------> SACAMOS TODO");							
+								roiHour.withdraw(accountAmount);	
+							} else {
+								if (roiHour.makeInternalDeposit(2)) {
+									accountAmount = roiHour.getAmount();
+									if (accountAmount > 0.10) {
+											roiHour.withdraw(accountAmount);
+									}
+									if (roiHour.checkDepositOK()) {
+										ROIHour.setPanic(false);
+									} else {   	// PANIC!!!!!!!!!!!
+										ROIHour.setPanic(true);
+										System.out.println("----------------------------------------------------> PANIC!!!!!!!!! --------------------------------");									
+									}
+								} 								
+							}
 						}
 					}
 					else if (modo.equalsIgnoreCase("mantenimiento_compuesto")) {   // OJO, NO HACERLO CON ESTA, DEPOSITOS ALTOS LOS INVIERTE a 1 AÑO.
@@ -231,6 +253,66 @@ public class HYIPManager {
 			}
 		}
 	}		
+	public void doHourlyGo() {
+		HourlyGo hourlyGo = new HourlyGo();
+		if (hourlyGo.isAlive()) {
+			String user, pwd, modo;
+			int total = Integer.parseInt(Configuracion.getProperty("hourlygo_total"));
+			for (int i=1; i <= total; i++) {
+				user = Configuracion.getProperty("hourlygo" + i + "_user");
+				pwd = Configuracion.getProperty("hourlygo" + i + "_pwd");
+				modo = Configuracion.getProperty("hourlygo" + i + "_modo");
+				if (hourlyGo.login(user,pwd)) {							
+					// 1.- Comprobamos SALDO
+					double accountAmount = hourlyGo.getAmount();
+					System.out.println("HOURLYGO " + user + ": Amount: " + accountAmount);
+
+					// 2.- Sacamos SALDO según modo
+					if (modo.equalsIgnoreCase("mantenimiento")) {
+						// Nuevo método, por no ser fiable el tema de si hay un depósito activo.
+						accountAmount = hourlyGo.getAmount();
+						if (accountAmount > 2.0) {  
+							// Reinvertimos y sacamos el resto. // OJO , fallará cuando hay dos depósitos de 5...
+							// Si falla, no sacamos.
+							if (hourlyGo.makeInternalDeposit(2)) {
+								accountAmount = hourlyGo.getAmount();
+								// Sólo sacamos si es > 0.10
+								if (accountAmount > 0.10) {
+									hourlyGo.withdraw(accountAmount);
+								}																	
+							} 
+						}
+					}
+					else if (modo.equalsIgnoreCase("mantenimiento_compuesto")) {   // OJO, NO HACERLO CON ESTA, DEPOSITOS ALTOS LOS INVIERTE a 1 AÑO.
+							if (hourlyGo.getActiveDeposit() == 0.0) {  // Se acabó el depósito anterior
+								// Reinvertimos y sacamos ganancias. Sacamos 5% de las ganancias, y reinvertimos el resto
+								//Calculos:
+								accountAmount = hourlyGo.getAmount();
+								Double withdrawAmount = accountAmount * 0.05;
+								Double reinversionAmount = accountAmount - withdrawAmount;
+								if (hourlyGo.makeInternalDeposit(reinversionAmount)) {									
+									hourlyGo.withdraw(withdrawAmount);								
+								} 
+							}
+						}					
+					else { // Modo normal. Sacamos dinero.
+						// Sólo sacamos cantidades enteras, para evitar comisiones de más, excepto si ya han vencido los depósitos, que sacamos lo que quede...
+						if (hourlyGo.getActiveDeposit() == 0.0) { // Sacamos todo
+							hourlyGo.withdraw(accountAmount);
+						} else {
+							double withdrawAmount = new Double(accountAmount).intValue();
+							// Sólo si es >1 nos interesa
+							if (withdrawAmount >= 1) {
+								hourlyGo.withdraw(withdrawAmount);	
+							}
+						}					}
+
+					hourlyGo.logout(); 				
+				}
+			}
+		}
+	}		
+
 	public void doHourlyCool() {
 		HourlyCool hourlyCool = new HourlyCool();
 		if (hourlyCool.isAlive()) {
